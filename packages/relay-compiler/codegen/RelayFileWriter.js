@@ -48,6 +48,7 @@ export type WriterConfig = {
   platform?: string,
   fragmentsWithLegacyFlowTypes?: Set<string>,
   schemaExtensions: Array<string>,
+  outputExtension: string,
   relayRuntimeModule?: string,
   inputFieldWhiteListForFlow?: Array<string>,
 };
@@ -206,6 +207,7 @@ class RelayFileWriter {
             this.skipPersist ? null : this._config.persistQuery,
             this._config.platform,
             this._config.relayRuntimeModule || 'relay-runtime',
+            this._config.outputExtension,
           );
         }),
       );

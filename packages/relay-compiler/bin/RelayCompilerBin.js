@@ -60,6 +60,7 @@ async function run(options: {
   schema: string,
   src: string,
   extensions: Array<string>,
+  outputExtension: string,
   transform: Array<string>,
   watch?: ?boolean,
 }) {
@@ -97,7 +98,7 @@ Ensure that one such file exists in ${srcDir} or its parents.
   };
   const writerConfigs = {
     default: {
-      getWriter: getRelayFileWriter(srcDir),
+      getWriter: getRelayFileWriter(srcDir, options.outputExtension),
       parser: 'default',
     },
   };
@@ -115,7 +116,7 @@ Ensure that one such file exists in ${srcDir} or its parents.
   }
 }
 
-function getRelayFileWriter(baseDir: string) {
+function getRelayFileWriter(baseDir: string, outputExtension: string) {
   return (onlyValidate, schema, documents, baseDocuments) =>
     new RelayFileWriter({
       config: {
@@ -128,6 +129,7 @@ function getRelayFileWriter(baseDir: string) {
         },
         baseDir,
         schemaExtensions,
+        outputExtension,
       },
       onlyValidate,
       schema,
@@ -199,6 +201,12 @@ const argv = yargs
       array: true,
       default: ['js'],
       describe: 'File extensions to compile (--extensions js jsx)',
+      type: 'string',
+    },
+    outputExtension: {
+      array: false,
+      default: ['js'],
+      describe: 'File extention to output generated files with',
       type: 'string',
     },
     transform: {

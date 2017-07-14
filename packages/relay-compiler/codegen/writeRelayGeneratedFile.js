@@ -41,10 +41,11 @@ async function writeRelayGeneratedFile(
   persistQuery: ?(text: string) => Promise<string>,
   platform: ?string,
   relayRuntimeModule: string,
+  outputExtension: string,
 ): Promise<?GeneratedNode> {
   const moduleName = generatedNode.name + '.graphql';
   const platformName = platform ? moduleName + '.' + platform : moduleName;
-  const filename = platformName + '.js';
+  const filename = platformName + '.' + outputExtension;
   const flowTypeName = generatedNode.kind === 'Batch'
     ? 'ConcreteBatch'
     : 'ConcreteFragment';
