@@ -61,7 +61,9 @@ async function run(options: {
   src: string,
   extensions: Array<string>,
   outputExtension: string,
+  outputDir?: string,
   transform: Array<string>,
+  generateExtraContentModule?: string,
   watch?: ?boolean,
 }) {
   const schemaPath = path.resolve(process.cwd(), options.schema);
@@ -96,9 +98,29 @@ Ensure that one such file exists in ${srcDir} or its parents.
       watchmanExpression: buildWatchExpression(options),
     },
   };
+  let generateExtraContent = undefined;
+
+  if (options.extraContentGeneratorModule != null) {
+    // It is ok to require here, it is supposed to be a dynamic import
+
+    /* eslint-disable */
+    generateExtraContent = (
+      // $FlowFixMe
+      __non_webpack_require__(
+        // $FlowFixMe
+        path.resolve(process.cwd(), options.extraContentGeneratorModule),
+      )
+    ).default;
+    /* eslint-enable */
+    if (generateExtraContent == null) {
+      throw new Error(
+        'Got ' + JSON.stringify(generateExtraContent) + ' for generate extra content. Should be a function'
+      );
+    }
+  }
   const writerConfigs = {
     default: {
-      getWriter: getRelayFileWriter(srcDir, options.outputExtension),
+      getWriter: getRelayFileWriter(srcDir, options.outputExtension, options.outputDir, generateExtraContent),
       parser: 'default',
     },
   };
@@ -116,7 +138,7 @@ Ensure that one such file exists in ${srcDir} or its parents.
   }
 }
 
-function getRelayFileWriter(baseDir: string, outputExtension: string) {
+function getRelayFileWriter(baseDir: string, outputExtension: string, outputDir: ?string, generateExtraContent: any) {
   return (onlyValidate, schema, documents, baseDocuments) =>
     new RelayFileWriter({
       config: {
@@ -128,8 +150,10 @@ function getRelayFileWriter(baseDir: string, outputExtension: string) {
           queryTransforms,
         },
         baseDir,
+        outputDir: outputDir || undefined,
         schemaExtensions,
         outputExtension,
+        generateExtraContent,
       },
       onlyValidate,
       schema,
@@ -212,6 +236,16 @@ const argv = yargs
     transform: {
       array: true,
       describe: 'Use a transform module on top-level files',
+      type: 'string',
+    },
+    'extraContentGeneratorModule': {
+      array: false,
+      describe: 'Relative path that exports function to generate extra content.',
+      type: 'string',
+    },
+    'outputDir': {
+      array: false,
+      describe: 'Directory to output generated files in.',
       type: 'string',
     },
     watch: {

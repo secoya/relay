@@ -623,8 +623,12 @@ class RelayParser {
     return handles;
   }
 
+  _isRelayCompatibleDirective(directive: DirectiveNode): boolean {
+    return directive.name.value !== 'exportType';
+  }
+
   _transformDirectives(directives: Array<DirectiveNode>): Array<Directive> {
-    return directives.map(directive => {
+    return directives.filter(this._isRelayCompatibleDirective).map(directive => {
       const name = getName(directive);
       const directiveDef = this._schema.getDirective(name);
       invariant(

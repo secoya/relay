@@ -23,6 +23,7 @@ const formatGeneratedModule: FormatModule = ({
   flowText,
   hash,
   relayRuntimeModule,
+  extraContent,
 }) => {
   const objectName = documentType === 'ConcreteBatch' ? 'batch' : 'fragment';
   const docTextComment = docText ? '\n/*\n' + docText.trim() + '\n*/\n' : '';
@@ -30,6 +31,7 @@ const formatGeneratedModule: FormatModule = ({
   return `/**
  * ${'@'}flow${hashText}
  */
+ ${extraContent || ''}
 
 /* eslint-disable */
 
@@ -42,8 +44,7 @@ ${flowText || ''}
 
 ${docTextComment}
 const ${objectName} /*: ${documentType}*/ = ${concreteText};
-
-module.exports = ${objectName};
+export default ${objectName};
 `;
 };
 

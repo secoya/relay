@@ -43,6 +43,11 @@ export type WriterConfig = {
   formatModule: FormatModule,
   compilerTransforms: CompilerTransforms,
   generateExtraFiles?: GenerateExtraFiles,
+  generateExtraContent?: (
+    schema: GraphQLSchema,
+    documents: DocumentNode[],
+    baseDocuments: DocumentNode[]
+  ) => Map<string, string>,
   outputDir?: string,
   persistQuery?: (text: string) => Promise<string>,
   platform?: string,
@@ -125,14 +130,22 @@ class RelayFileWriter {
       });
     }
 
+    const baseDocumentsArray = this._baseDocuments.valueSeq().toArray();
+    const documentsArray = this._documents.valueSeq().toArray();
+
     const definitions = ASTConvert.convertASTDocumentsWithBase(
       extendedSchema,
-      this._baseDocuments.valueSeq().toArray(),
-      this._documents.valueSeq().toArray(),
+      baseDocumentsArray,
+      documentsArray,
       // Verify using local and global rules, can run global verifications here
       // because all files are processed together
       [...RelayValidator.LOCAL_RULES, ...RelayValidator.GLOBAL_RULES],
     );
+
+    let extraContentMap: Map<string, string> | null = null;
+    if (this._config.generateExtraContent != null) {
+      extraContentMap = await this._config.generateExtraContent(extendedSchema, baseDocumentsArray, documentsArray);
+    }
 
     const compilerContext = new RelayCompilerContext(extendedSchema);
     const compiler = new RelayCompiler(
@@ -199,6 +212,11 @@ class RelayFileWriter {
             'RelayCompiler: did not compile definition: %s',
             node.name,
           );
+          let extraContent: null | string = null;
+          if (extraContentMap != null) {
+            console.log(compiledNode.name);
+            extraContent = extraContentMap.get(compiledNode.name) || null;
+          }
           await writeRelayGeneratedFile(
             getGeneratedDirectory(compiledNode.name),
             compiledNode,
@@ -208,6 +226,7 @@ class RelayFileWriter {
             this._config.platform,
             this._config.relayRuntimeModule || 'relay-runtime',
             this._config.outputExtension,
+            extraContent,
           );
         }),
       );
